@@ -65,7 +65,6 @@ const InfoDivGradient = styled.div`
 const trackReducer = (state,action) =>{
     switch (action.type){
         case("setAttrib"):
-            console.log("State: ",state);
             return {
                 ...state,
                 [action.attrib]: action.value
@@ -76,6 +75,16 @@ const trackReducer = (state,action) =>{
                 title: action.tags.title,
                 artist: action.tags.artist,
                 album: action.tags.album,
+                genre: action.tags.genre,
+                comment: action.tags.comment,
+                year: action.tags.year,
+                track: action.tags.track
+
+            }
+        case("change"):
+            return {
+                ...state,
+                [action.tag]:action.value
             }
     }
 }
@@ -83,13 +92,14 @@ const trackReducer = (state,action) =>{
 
 function MusicDisplay(props){
     const [track, trackDispatch] = useReducer(trackReducer,{},undefined)
-
+    const [buffer,setBuffer]=useState()
     const dropImage=async (e)=>{
         e.preventDefault()
         e.stopPropagation()
         let files = e.dataTransfer.files;
         if(files && files[0]){
             for(const file of files){
+                console.log(file)
                 switch (true){
                     case(file.type.includes("image")):
                         readImage(file)
@@ -97,6 +107,7 @@ function MusicDisplay(props){
                     case(file.type.includes("audio")):
                         readAudio(file)
                         getMetaData(file)
+                        trackDispatch({type:"change",tag:"name",value:file.name})
                         break
                     default:
                         console.log(file)
@@ -137,50 +148,66 @@ function MusicDisplay(props){
         reader.readAsDataURL(file);
 
     }
-    function readString(dataView, offset, length) {
-        var o = '';
-        for (var i = offset; i < offset + length; i++) {
-            // keep only printable characters
-            if (i >= 32) o += String.fromCharCode(dataView.getUint8(i));
-        }
-        return o;
-    }
     const getMetaData=(file)=>{
         var reader = new FileReader();
         reader.onloadend = async function () {
             let buff = reader.result;
             let mp3Tag = new MP3Tag(buff)
             mp3Tag.read();
+            console.log(mp3Tag.tags)
             trackDispatch({type: "setTags", tags: mp3Tag.tags})
+            trackDispatch({type: "change", tag:"extension",value:"lll"})
             if (mp3Tag.error !== '') throw new Error(mp3Tag.error)
+            setBuffer(buff)
         }
         reader.readAsArrayBuffer(file)
     }
-    const writeMetaData= async (buffer)=>{
-        let mp3Tag = new MP3Tag(buffer,true)
-        mp3Tag.read()
-        mp3Tag.tags.album= "BlackBolshevik"
-        mp3Tag.save()
-        mp3Tag.read()
-        let blob = new Blob([mp3Tag.buffer])
-        let a = document.createElement("a");
-        a.download="Track2.wav"
-        a.href= window.URL.createObjectURL(blob)
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        trackDispatch({type: "setTags", tags: mp3Tag.tags})
+    const writeMetaData= async (buffer)=> {
+        return new Promise((resolve)=>{
+            let mp3Tag = new MP3Tag(buffer)
+            mp3Tag.read()
+            mp3Tag.tags.album = track.album
+            mp3Tag.tags.artist = track.artist
+            mp3Tag.tags.track = track.track
+            mp3Tag.tags.title = track.title
+            mp3Tag.tags.year = track.year
+            mp3Tag.tags.comment = track.comment
+            mp3Tag.tags.genre = track.genre
+            trackDispatch({type: "setTags", tags: mp3Tag.tags})
+            mp3Tag.save()
+            if(mp3Tag.error!==""){
+                console.log("Error: ",mp3Tag.error)
+            }
+            let blob = new Blob([mp3Tag.buffer])
+            let a = document.createElement("a");
+            a.download=track.name
+            a.href= window.URL.createObjectURL(blob)
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            resolve(mp3Tag.buffer)
+        });
     }
+
+    const saveChanges=()=>{
+        writeMetaData(buffer).then(res=> {
+            setBuffer(res)
+        })
+    }
+const changeTag=(e)=>{
+    trackDispatch({type:"change",tag:e.target.id,value:e.target.value})
+}
     return(
         <DisplayBody>
             <MusicBox url={track.image} onDrop={dropImage} onDragOver={e=>e.preventDefault()} >
 
             </MusicBox>
             <audio id={"audio"} src={track.audio} controls/>
+            <input type={"button"} onClick={saveChanges}/>
             <MusicInfo>
-                <InfoInput placeholder={"Track Title"} value={track.title}/>
-                <InfoInput placeholder={"Artist"} value={track.artist}/>
-                <InfoInput placeholder={"Album"} value={track.album}/>
+                <InfoInput id={"track"} placeholder={"Track Title"} value={track.title} onChange={changeTag}/>
+                <InfoInput id={"artist"} placeholder={"Artist"} value={track.artist} onChange={changeTag}/>
+                <InfoInput id={"album"} placeholder={"Album"} value={track.album} onChange={changeTag}/>
             </MusicInfo>
         </DisplayBody>
     )
