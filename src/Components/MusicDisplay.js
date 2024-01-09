@@ -2,6 +2,7 @@ import styled from "styled-components";
 import {useReducer, useState} from "react";
 import MP3Tag from "mp3tag.js"
 
+
 const DisplayBody = styled.div`
   display: flex;
   flex-direction: column;
@@ -107,6 +108,7 @@ function MusicDisplay(props){
                     case(file.type.includes("audio")):
                         readAudio(file)
                         getMetaData(file)
+                        getImage(file)
                         trackDispatch({type:"change",tag:"name",value:file.name})
                         break
                     default:
@@ -142,10 +144,33 @@ function MusicDisplay(props){
     const readAudio=(file)=>{
         const reader = new FileReader();
         reader.onloadend=()=>{
-            // console.log(reader.result)
             trackDispatch({type:"setAttrib",attrib:"audio",value:reader.result})
+            reader.result
         }
         reader.readAsDataURL(file);
+
+    }
+    const getImage=(apic)=>{
+        let reader = new FileReader()
+        reader.onload=()=>{
+            let img= document.createElement("img")
+            img.onloadend=()=> {
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
+                canvas.height = 360;
+                canvas.width = 360;
+
+                ctx.drawImage(img, 0, 0, 360, 360);
+
+                let uri = canvas.toDataURL();
+                console.log("imgUri", uri)
+                trackDispatch({type: "setAttrib", attrib: "image", value: uri})
+            }
+            img.src= "data:"+apic.format+";base256,"+apic.data;
+        }
+        let blob = new Blob(apic.data)
+        reader.readAsBinaryString(blob)
+        // (apic.data)
 
     }
     const getMetaData=(file)=>{
@@ -154,7 +179,7 @@ function MusicDisplay(props){
             let buff = reader.result;
             let mp3Tag = new MP3Tag(buff)
             mp3Tag.read();
-            console.log(mp3Tag.tags)
+            console.log(mp3Tag.tags.picture)
             trackDispatch({type: "setTags", tags: mp3Tag.tags})
             trackDispatch({type: "change", tag:"extension",value:"lll"})
             if (mp3Tag.error !== '') throw new Error(mp3Tag.error)
@@ -175,6 +200,7 @@ function MusicDisplay(props){
             mp3Tag.tags.genre = track.genre
             trackDispatch({type: "setTags", tags: mp3Tag.tags})
             mp3Tag.save()
+            getImage(mp3Tag.tags.v2.APIC[0])
             if(mp3Tag.error!==""){
                 console.log("Error: ",mp3Tag.error)
             }
@@ -183,7 +209,7 @@ function MusicDisplay(props){
             a.download=track.name
             a.href= window.URL.createObjectURL(blob)
             document.body.appendChild(a)
-            a.click()
+            // a.click()
             a.remove()
             resolve(mp3Tag.buffer)
         });
