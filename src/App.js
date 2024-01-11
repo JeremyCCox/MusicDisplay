@@ -4,7 +4,7 @@ import MusicOptions from "../src/Components/MusicOptions";
 
 const GlobalStyle = createGlobalStyle`
   html{
-    scroll-snap-type: y mandatory;
+    //scroll-snap-type: y mandatory;
   }
   body{
     background-color: rgb(0, 0, 51);
