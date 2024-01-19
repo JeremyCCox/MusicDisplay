@@ -24,7 +24,8 @@ module.exports = {
         extensions: ['.js', '.jsx', '.json'],
         fallback:{
             "fs":false,
-            "path":false
+            "path":false,
+            "url": false
         }
     },
     module: {

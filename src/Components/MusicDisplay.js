@@ -223,6 +223,7 @@ function MusicDisplay(props){
             setBuffer(res)
         })
     }
+
 const changeTag=(e)=>{
     trackDispatch({type:"change",tag:e.target.id,value:e.target.value})
 }

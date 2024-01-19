@@ -1,6 +1,7 @@
 import MusicDisplay from "../src/Components/MusicDisplay";
 import styled, {createGlobalStyle} from "styled-components";
 import MusicOptions from "../src/Components/MusicOptions";
+import {TrackProvider} from "./ContextHooks/useTrackContext";
 
 const GlobalStyle = createGlobalStyle`
   html{
@@ -8,8 +9,6 @@ const GlobalStyle = createGlobalStyle`
   }
   body{
     background-color: rgb(0, 0, 51);
-    
-    //scroll-snap-stop: normal;
     overflow-y:hidden;
   }
 `
@@ -29,8 +28,10 @@ function App(){
         <>
             <GlobalStyle/>
             <ScrollZone>
-                <MusicDisplay/>
-                <MusicOptions/>
+                <TrackProvider>
+                    <MusicDisplay/>
+                    <MusicOptions/>
+                </TrackProvider>
             </ScrollZone>
         </>
 
